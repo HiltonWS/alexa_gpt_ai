@@ -122,7 +122,7 @@ class AskIntentHandler(AbstractRequestHandler):
                 ],
                 model=model,
             )
-            speak_output = response.choices[0].text.strip()
+            speak_output = response.choices[0].message.strip()
 
         return (
             handler_input.response_builder
