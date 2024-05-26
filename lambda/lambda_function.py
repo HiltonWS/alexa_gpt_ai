@@ -2,10 +2,12 @@
 
 import logging
 import ask_sdk_core.utils as ask_utils
-import openai
 import boto3
+import json
 
 from botocore.exceptions import ClientError
+
+from openai import OpenAI
 
 from ask_sdk_core.skill_builder import SkillBuilder
 from ask_sdk_core.dispatch_components import AbstractRequestHandler
@@ -17,28 +19,40 @@ from ask_sdk_model import Response
 logger = logging.getLogger(__name__)
 logger.setLevel(logging.INFO)
 
+def assume_role(role_arn, role_session_name):
+    sts_client = boto3.client('sts')
+    try:
+        assumed_role_object = sts_client.assume_role(
+            RoleArn=role_arn,
+            RoleSessionName=role_session_name
+        )
+        credentials = assumed_role_object['Credentials']
+        return credentials
+    except ClientError as e:
+        raise e
+        return None
+
 def get_secret():
-
-    secret_name = "OPENAPI"
-    region_name = "eu-west-1"
-
+    credentials = assume_role("arn:aws:iam::446895640460:role/Alexa-Dev", "AssumeRoleSession-Alexa")
     # Create a Secrets Manager client
-    session = boto3.session.Session()
-    client = session.client(
+    client = boto3.client(
         service_name='secretsmanager',
-        region_name=region_name
+        region_name="eu-west-1",
+        aws_access_key_id=credentials['AccessKeyId'],
+        aws_secret_access_key=credentials['SecretAccessKey'],
+        aws_session_token=credentials['SessionToken']
     )
 
     try:
-        get_secret_value_response = client.get_secret_value(
-            SecretId=secret_name
-        )
+        get_secret_value_response = client.get_secret_value(SecretId="OPENAPI")
     except ClientError as e:
         # For a list of exceptions thrown, see
         # https://docs.aws.amazon.com/secretsmanager/latest/apireference/API_GetSecretValue.html
         raise e
 
-    return get_secret_value_response['SecretString']['secret_key']
+    secret_string = get_secret_value_response['SecretString']
+    secret_json = json.loads(secret_string)
+    return secret_json['secret_key']
 
 API_KEYS = {
     'gpt-3.5-turbo': get_secret()
@@ -47,14 +61,18 @@ API_KEYS = {
 def get_available_api_key():
     for model, api_key in API_KEYS.items():
         try:
-            openai.api_key = api_key
-            openai.Completion.create(
-                engine=model,
-                prompt="Test",
-                max_tokens=5,
-                n=1,
-                stop=None,
-                temperature=0.7
+            client = OpenAI(
+                # This is the default and can be omitted
+                api_key=api_key,
+            )
+            client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Test",
+                    }
+                ],
+                model=model,
             )
             return api_key, model
         except openai.error.OpenAIError:
@@ -81,7 +99,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
 
 class AskIntentHandler(AbstractRequestHandler):
-    """Handler for Ask to GPT Intent."""
+    """Handler for AskIntent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("AskIntent")(handler_input)
@@ -92,15 +110,18 @@ class AskIntentHandler(AbstractRequestHandler):
         api_key, model = get_available_api_key()
         if api_key is not None:
             question = handler_input.request_envelope.request.intent.slots["question"].value
-            openai.api_key =  api_key
-            response = openai.completions.create(
+            client = OpenAI(
+                api_key=api_key,
+            )
+            response = client.chat.completions.create(
+                messages=[
+                    {
+                        "role": "user",
+                        "content": "Test",
+                    }
+                ],
                 model=model,
-                prompt=question,
-                max_tokens=150,
-                n=1,
-                stop=None,
-                temperature=0.7
-                )
+            )
             speak_output = response.choices[0].text.strip()
 
         return (
