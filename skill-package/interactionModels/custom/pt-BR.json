@@ -1,5 +1,26 @@
 {
   "interactionModel": {
+    "dialog": {
+      "intents": [
+        {
+          "slots": [
+            {
+              "name": "question",
+              "elicitationRequired": true,
+              "type": "AMAZON.SearchQuery",
+              "confirmationRequired": false,
+              "prompts": {
+                "elicitation": "Elicit.Slot.859378682020.798180551524"
+              }
+            }
+          ],
+          "name": "AskIntent",
+          "confirmationRequired": false,
+          "prompts": {}
+        }
+      ],
+      "delegationStrategy": "ALWAYS"
+    },
     "languageModel": {
       "intents": [
         {
@@ -19,13 +40,20 @@
           "samples": []
         },
         {
-          "slots": ["question"],
+          "slots": [
+            {
+              "name": "question",
+              "type": "AMAZON.SearchQuery",
+              "samples": [
+                "{question}"
+              ]
+            }
+          ],
           "name": "AskIntent",
           "samples": [
-            "pergunta",
-            "perguntar",
-            "eu quero perguntar",
-            "pergunte"
+            "eu quero perguntar {question}",
+            "perguntar {question}",
+            "pergunta {question}"
           ]
         },
         {
@@ -35,6 +63,17 @@
       ],
       "types": [],
       "invocationName": "inteligência artificial"
-    }
+    },
+    "prompts": [
+      {
+        "variations": [
+          {
+            "type": "PlainText",
+            "value": "O que quer perguntar?"
+          }
+        ],
+        "id": "Elicit.Slot.859378682020.798180551524"
+      }
+    ]
   }
 }
