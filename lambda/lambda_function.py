@@ -30,7 +30,6 @@ def assume_role(role_arn, role_session_name):
         return credentials
     except ClientError as e:
         raise e
-        return None
 
 def get_secret():
     credentials = assume_role("arn:aws:iam::446895640460:role/Alexa-Dev", "AssumeRoleSession-Alexa")
@@ -53,9 +52,13 @@ def get_secret():
     secret_string = get_secret_value_response['SecretString']
     secret_json = json.loads(secret_string)
     return secret_json['secret_key']
-
+API_KEY = get_secret();
 API_KEYS = {
-    'gpt-3.5-turbo': get_secret()
+    'gpt-4o': API_KEY,
+    'gpt-4': API_KEY,
+    'gpt-4-turbo':  API_KEY,
+    'gpt-3.5-turbo': API_KEY,
+    'davinci-002': API_KEY
 }
 
 def get_available_api_key():
@@ -75,7 +78,7 @@ def get_available_api_key():
                 model=model,
             )
             return api_key, model
-        except openai.error.OpenAIError:
+        except ClientError:
             continue
     return None, None
 
@@ -127,7 +130,6 @@ class AskIntentHandler(AbstractRequestHandler):
         return (
             handler_input.response_builder
                 .speak(speak_output)
-                # .ask("add a reprompt if you want to keep the session open for the user to respond")
                 .response
         )
 
@@ -176,7 +178,7 @@ class FallbackIntentHandler(AbstractRequestHandler):
     def handle(self, handler_input):
         # type: (HandlerInput) -> Response
         logger.info("In FallbackIntentHandler")
-        speech = "Hmm, Eu não tenho certeza. Você pode falar Perguntar ou Ajuda. O que deseja fazer?"
+        speech = "Humm, Eu não tenho certeza. Você pode falar Perguntar ou Ajuda. O que deseja fazer?"
         reprompt = "Eu não entendi. Como posso ajudar?"
 
         return handler_input.response_builder.speak(speech).ask(reprompt).response
