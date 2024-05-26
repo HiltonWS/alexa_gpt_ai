@@ -81,7 +81,7 @@ class LaunchRequestHandler(AbstractRequestHandler):
 
 
 class AskIntentHandler(AbstractRequestHandler):
-    """Handler for Hello World Intent."""
+    """Handler for Ask to GPT Intent."""
     def can_handle(self, handler_input):
         # type: (HandlerInput) -> bool
         return ask_utils.is_intent_name("AskIntent")(handler_input)
