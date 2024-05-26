@@ -62,7 +62,6 @@ def get_available_api_key():
     for model, api_key in API_KEYS.items():
         try:
             client = OpenAI(
-                # This is the default and can be omitted
                 api_key=api_key,
             )
             client.chat.completions.create(
@@ -75,7 +74,7 @@ def get_available_api_key():
                 model=model,
             )
             return api_key, model
-        except openai.error.OpenAIError:
+        except ClientError:
             continue
     return None, None
 
