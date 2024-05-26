@@ -92,7 +92,6 @@ class AskIntentHandler(AbstractRequestHandler):
         api_key, model = get_available_api_key()
         if api_key is not None:
             question = handler_input.request_envelope.request.intent.slots["question"].value
-            print(question)
             openai.api_key =  api_key
             response = openai.completions.create(
                 model=model,
